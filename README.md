@@ -45,100 +45,100 @@ Run unpack_intel_ipp_6.1.1.035.cmd to unpack it.
 
 ---
 
-# Портирование на macOS 14.8.3 (23J220), Apple Silicon M1
+# Porting to macOS 14.8.3 (23J220), Apple Silicon M1
 
-## Оценка проекта
+## Project assessment
 
-Кодовая база Winamp — это крупный Windows-проект на C++ (~1.7 GB, ~3138 `.cpp`, ~4811 `.h`,
-~1382 `.c`), исторически собираемый только в Visual Studio 2019.
+The Winamp codebase is a large Windows C++ project (~1.7 GB, ~3138 `.cpp`, ~4811 `.h`,
+~1382 `.c`), historically built only with Visual Studio 2019.
 
-Ключевые препятствия для запуска на macOS / ARM64:
+Key blockers for running on macOS / ARM64:
 
-- **Windows API везде.** `windows.h` подключается в ~1004 файлах, `_WIN32` встречается в ~1339,
-  есть зависимость от MFC. Требуется слой совместимости или замена.
-- **UI на движке Wasabi** (собственный скин-движок поверх Win32 GDI / DirectX 9) — нет
-  кроссплатформенной реализации, нужен новый нативный UI-слой.
-- **Вывод звука** через DirectSound (`out_ds`) и WASAPI (`out_wasapi`) — на macOS нужен
-  бэкенд на CoreAudio / AudioUnit.
-- **Ввод/декодирование** частично через DirectShow (`in_dshow`) — несовместимо с macOS.
-- **Intel IPP 6.1.1.035 — только x86**, не работает на Apple Silicon. Критичная зависимость
-  DSP/кодеков, требует замены (Accelerate/vDSP или софт-реализация).
-- **Устаревшие зависимости**: OpenSSL 1.0.1u, DirectX 9 SDK (June 2010).
-- **Система сборки** — `.sln` Visual Studio, нет CMake/Xcode-сборки для приложения целиком.
+- **Windows API everywhere.** `windows.h` is included in ~1004 files, `_WIN32` appears in
+  ~1339, and there is an MFC dependency. A compatibility layer or replacement is required.
+- **UI on the Wasabi engine** (a custom skinning engine on top of Win32 GDI / DirectX 9) —
+  there is no cross-platform implementation; a new native UI layer is needed.
+- **Audio output** via DirectSound (`out_ds`) and WASAPI (`out_wasapi`) — macOS needs a
+  CoreAudio / AudioUnit backend.
+- **Input/decoding** partly via DirectShow (`in_dshow`) — incompatible with macOS.
+- **Intel IPP 6.1.1.035 is x86-only** and does not run on Apple Silicon. It is a critical
+  DSP/codec dependency and must be replaced (Accelerate/vDSP or a software implementation).
+- **Outdated dependencies**: OpenSSL 1.0.1u, DirectX 9 SDK (June 2010).
+- **Build system** is a Visual Studio `.sln`; there is no CMake/Xcode build for the whole app.
 
-Положительное:
+On the positive side:
 
-- Есть кроссплатформенное ядро **`replicant`** (аудио-интерфейсы `ifc_*`, декодеры, плеер) и
-  платформенный слой **`nx`** с Makefile-таргетом `Darwin` и `.xcodeproj` для ряда модулей
-  (`Wasabi`, `bfc`, `png`, `alac`, `nde`, `playlist`, `xml`, `tataki` и др.).
-- Существует старая заготовка под macOS в `bfc/platform` (на **Carbon** — устарела и удалена из
-  современной macOS, её придётся переписать на Cocoa/POSIX).
-- Таргет `nx` называется `osx-amd64` — нужно завести `osx-arm64`.
+- There is a cross-platform core, **`replicant`** (audio interfaces `ifc_*`, decoders, player),
+  and a platform layer, **`nx`**, with a `Darwin` Makefile target and `.xcodeproj` files for
+  several modules (`Wasabi`, `bfc`, `png`, `alac`, `nde`, `playlist`, `xml`, `tataki`, etc.).
+- There is old macOS scaffolding in `bfc/platform` (built on **Carbon** — deprecated and removed
+  from modern macOS, so it must be rewritten on Cocoa/POSIX).
+- The `nx` target is named `osx-amd64` — an `osx-arm64` target needs to be added.
 
-**Стратегия:** идти снизу вверх — сначала собрать кроссплатформенное ядро и кодеки под arm64
-с выводом на CoreAudio (рабочий headless-плеер), затем построить нативный UI и постепенно
-вернуть скины/визуализации.
+**Strategy:** work bottom-up — first build the cross-platform core and codecs for arm64 with a
+CoreAudio output (a working headless player), then build a native UI and gradually bring back
+skins/visualizations.
 
-## Задачи
+## Tasks
 
-### Фаза 0 — Инфраструктура и оценка
-- [ ] 00001 Провести полный аудит зависимостей от Windows API (windows.h, _WIN32, MFC, COM, ATL) и составить карту модулей по степени портируемости
-- [ ] 00002 Установить toolchain на macOS (Xcode Command Line Tools, clang, cmake, ninja, pkg-config, Homebrew-зависимости)
-- [ ] 00003 Завести кроссплатформенную систему сборки (CMake) как замену winampAll_2019.sln
-- [ ] 00004 Настроить CI-пайплайн для сборки и тестов на arm64 macOS
+### Phase 0 — Infrastructure and assessment
+- [ ] 00001 Perform a full audit of Windows API dependencies (windows.h, _WIN32, MFC, COM, ATL) and map modules by portability
+- [ ] 00002 Set up the macOS toolchain (Xcode Command Line Tools, clang, cmake, ninja, pkg-config, Homebrew dependencies)
+- [ ] 00003 Introduce a cross-platform build system (CMake) to replace winampAll_2019.sln
+- [ ] 00004 Set up a CI pipeline for building and testing on arm64 macOS
 
-### Фаза 1 — Платформенный слой (nx / bfc)
-- [ ] 00005 Добавить таргет osx-arm64 в nx (Makefile/xcodeproj вместо osx-amd64)
-- [ ] 00006 Переписать мёртвый Carbon-код в bfc/platform на Cocoa/POSIX
-- [ ] 00007 Реализовать примитивы nx под macOS (потоки, мьютексы, семафоры, условные переменные, файлы, время, сон) через POSIX/GCD
-- [ ] 00008 Портировать строковый слой (UTF-16 ↔ UTF-8, wchar_t, OSFNCHAR) под macOS
+### Phase 1 — Platform layer (nx / bfc)
+- [ ] 00005 Add an osx-arm64 target to nx (Makefile/xcodeproj instead of osx-amd64)
+- [ ] 00006 Rewrite the dead Carbon code in bfc/platform on Cocoa/POSIX
+- [ ] 00007 Implement nx primitives on macOS (threads, mutexes, semaphores, condition variables, files, time, sleep) via POSIX/GCD
+- [ ] 00008 Port the string layer (UTF-16 ↔ UTF-8, wchar_t, OSFNCHAR) for macOS
 
-### Фаза 2 — Замена сторонних зависимостей
-- [ ] 00009 Удалить/заменить Intel IPP 6.1.1.035 (x86-only) на arm64-совместимое решение (Accelerate/vDSP или софт)
-- [ ] 00010 Заменить OpenSSL 1.0.1u на современный OpenSSL 3 / LibreSSL / SecureTransport
-- [ ] 00011 Устранить зависимости от DirectX 9 SDK
-- [ ] 00012 Собрать кодек-библиотеки под arm64 (mpg123, libvpx, vorbis, flac, alac, ogg)
+### Phase 2 — Replace third-party dependencies
+- [ ] 00009 Remove/replace Intel IPP 6.1.1.035 (x86-only) with an arm64-compatible solution (Accelerate/vDSP or software)
+- [ ] 00010 Replace OpenSSL 1.0.1u with modern OpenSSL 3 / LibreSSL / SecureTransport
+- [ ] 00011 Remove DirectX 9 SDK dependencies
+- [ ] 00012 Build codec libraries for arm64 (mpg123, libvpx, vorbis, flac, alac, ogg)
 
-### Фаза 3 — Аудио-движок (ядро replicant)
-- [ ] 00013 Собрать кроссплатформенное ядро replicant под arm64 (ifc_audio*, decode, player)
-- [ ] 00014 Реализовать output-плагин на CoreAudio/AudioUnit (замена out_ds / out_wasapi)
-- [ ] 00015 Портировать декодер MP3 (in_mp3 / mpg123)
-- [ ] 00016 Портировать декодер AAC/MP4
-- [ ] 00017 Портировать декодер FLAC
-- [ ] 00018 Портировать декодер Vorbis
-- [ ] 00019 Портировать WAV/AIFF/PCM
-- [ ] 00020 Портировать ReplayGain analysis
-- [ ] 00021 Портировать эквалайзер/DSP без зависимости от IPP
-- [ ] 00022 Собрать рабочий headless-плеер (CLI) для проверки сквозного воспроизведения
+### Phase 3 — Audio engine (replicant core)
+- [ ] 00013 Build the cross-platform replicant core for arm64 (ifc_audio*, decode, player)
+- [ ] 00014 Implement a CoreAudio/AudioUnit output plugin (replacing out_ds / out_wasapi)
+- [ ] 00015 Port the MP3 decoder (in_mp3 / mpg123)
+- [ ] 00016 Port the AAC/MP4 decoder
+- [ ] 00017 Port the FLAC decoder
+- [ ] 00018 Port the Vorbis decoder
+- [ ] 00019 Port WAV/AIFF/PCM
+- [ ] 00020 Port ReplayGain analysis
+- [ ] 00021 Port the equalizer/DSP without depending on IPP
+- [ ] 00022 Build a working headless player (CLI) to verify end-to-end playback
 
-### Фаза 4 — Файловый, медиа- и сетевой слой
-- [ ] 00023 Портировать filereader (file I/O, потоки) на POSIX
-- [ ] 00024 Портировать чтение/запись метаданных и тегов (id3v2, apev2, tagz)
-- [ ] 00025 Портировать извлечение обложек (album art)
-- [ ] 00026 Портировать работу с плейлистами (m3u, pls, xspf)
-- [ ] 00027 Портировать NDE (Nullsoft Database Engine) под arm64
-- [ ] 00028 Портировать сетевой слой HTTP/jnetlib (стриминг, интернет-радио)
+### Phase 4 — File, media, and network layer
+- [ ] 00023 Port filereader (file I/O, streams) to POSIX
+- [ ] 00024 Port metadata/tag reading and writing (id3v2, apev2, tagz)
+- [ ] 00025 Port album art retrieval
+- [ ] 00026 Port playlist handling (m3u, pls, xspf)
+- [ ] 00027 Port NDE (Nullsoft Database Engine) for arm64
+- [ ] 00028 Port the HTTP/jnetlib network layer (streaming, internet radio)
 
-### Фаза 5 — Пользовательский интерфейс
-- [ ] 00029 Спроектировать новый UI-слой для macOS (нативный Cocoa/SwiftUI или Qt) и зафиксировать решение
-- [ ] 00030 Реализовать главное окно плеера (play/pause/stop/seek/volume/transport)
-- [ ] 00031 Реализовать окно плейлиста
-- [ ] 00032 Реализовать менеджер медиатеки
-- [ ] 00033 Загрузчик классических скинов (.wsz) — разбор архива и ресурсов
-- [ ] 00034 Рендер классических bitmap-скинов на CoreGraphics/Metal
-- [ ] 00035 Окно эквалайзера (UI)
-- [ ] 00036 Визуализации (спектр/осциллограф) на Metal
+### Phase 5 — User interface
+- [ ] 00029 Design the new macOS UI layer (native Cocoa/SwiftUI or Qt) and commit to a decision
+- [ ] 00030 Implement the main player window (play/pause/stop/seek/volume/transport)
+- [ ] 00031 Implement the playlist window
+- [ ] 00032 Implement the media library manager
+- [ ] 00033 Classic skin (.wsz) loader — parse the archive and resources
+- [ ] 00034 Render classic bitmap skins on CoreGraphics/Metal
+- [ ] 00035 Equalizer window (UI)
+- [ ] 00036 Visualizations (spectrum/oscilloscope) on Metal
 
-### Фаза 6 — Интеграция с macOS и упаковка
-- [ ] 00037 Поддержка медиа-клавиш и Now Playing (MPRemoteCommandCenter / MPNowPlayingInfoCenter)
-- [ ] 00038 Drag&drop, ассоциации файлов и «Открыть с помощью»
-- [ ] 00039 Сборка .app-бандла (Info.plist, иконки, ресурсы)
-- [ ] 00040 Подпись кода (codesign) и нотаризация для распространения на macOS
-- [ ] 00041 Сборка DMG/инсталлятора
+### Phase 6 — macOS integration and packaging
+- [ ] 00037 Media keys and Now Playing support (MPRemoteCommandCenter / MPNowPlayingInfoCenter)
+- [ ] 00038 Drag & drop, file associations, and "Open With"
+- [ ] 00039 Build the .app bundle (Info.plist, icons, resources)
+- [ ] 00040 Code signing (codesign) and notarization for macOS distribution
+- [ ] 00041 Build a DMG/installer
 
-### Фаза 7 — Качество и сопровождение
-- [ ] 00042 Юнит-тесты аудио-движка
-- [ ] 00043 Интеграционные тесты воспроизведения по форматам
-- [ ] 00044 Прогон тестов на M1/arm64 в CI
-- [ ] 00045 Профилирование и оптимизация под Apple Silicon (NEON/Accelerate)
-- [ ] 00046 Обновить документацию сборки для macOS
+### Phase 7 — Quality and maintenance
+- [ ] 00042 Unit tests for the audio engine
+- [ ] 00043 Integration tests for playback across formats
+- [ ] 00044 Run tests on M1/arm64 in CI
+- [ ] 00045 Profiling and optimization for Apple Silicon (NEON/Accelerate)
+- [ ] 00046 Update the build documentation for macOS
