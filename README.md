@@ -79,6 +79,11 @@ On the positive side:
 CoreAudio output (a working headless player), then build a native UI and gradually bring back
 skins/visualizations.
 
+**Key milestones:**
+- **00022** — first audio: a headless CLI player that actually plays a local file.
+- **00039** — first installable app: an `.app` bundle with a window you can drop into `/Applications`.
+- **00040–00041** — signed/notarized DMG suitable for distribution.
+
 ## Tasks
 
 ### Phase 0 — Infrastructure and assessment
@@ -109,10 +114,10 @@ skins/visualizations.
 - [ ] 00019 Port WAV/AIFF/PCM
 - [ ] 00020 Port ReplayGain analysis
 - [ ] 00021 Port the equalizer/DSP without depending on IPP
-- [ ] 00022 Build a working headless player (CLI) to verify end-to-end playback
+- [ ] 00023 Port filereader (file I/O, streams) to POSIX — required to read local files for playback
+- [ ] 00022 🎯 **Milestone: first audio.** Build a working headless player (CLI) to verify end-to-end playback (depends on 00002–00015 and 00023)
 
-### Phase 4 — File, media, and network layer
-- [ ] 00023 Port filereader (file I/O, streams) to POSIX
+### Phase 4 — Media and network layer
 - [ ] 00024 Port metadata/tag reading and writing (id3v2, apev2, tagz)
 - [ ] 00025 Port album art retrieval
 - [ ] 00026 Port playlist handling (m3u, pls, xspf)
@@ -132,7 +137,7 @@ skins/visualizations.
 ### Phase 6 — macOS integration and packaging
 - [ ] 00037 Media keys and Now Playing support (MPRemoteCommandCenter / MPNowPlayingInfoCenter)
 - [ ] 00038 Drag & drop, file associations, and "Open With"
-- [ ] 00039 Build the .app bundle (Info.plist, icons, resources)
+- [ ] 00039 🎯 **Milestone: installable app.** Build the .app bundle (Info.plist, icons, resources) — first version you can drop into /Applications and use with a window
 - [ ] 00040 Code signing (codesign) and notarization for macOS distribution
 - [ ] 00041 Build a DMG/installer
 
