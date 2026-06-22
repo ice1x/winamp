@@ -3,6 +3,8 @@
 #include "win-amd64/types.h"
 #elif defined(_WIN32) && defined(_M_IX86)
 #include "win-x86/types.h"
+#elif defined(__APPLE__) && (defined(__aarch64__) || defined(__arm64__))
+#include "osx-arm64/types.h"
 #elif defined(__APPLE__) && defined(__LP64__)
 #include "osx-amd64/types.h"
 #elif defined(__APPLE__) // TODO: && defined(__LP32__)

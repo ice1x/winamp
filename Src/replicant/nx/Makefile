@@ -3,13 +3,19 @@
 MODULE_NAME := nx
 
 OS := $(shell sh -c 'uname -s 2>/dev/null || echo not')
+ARCH := $(shell sh -c 'uname -m 2>/dev/null || echo not')
 
 ifeq ($(OS),Linux)
 DIR := linux
 DIRARCH := linux
 else ifeq ($(OS),Darwin)
 DIR := osx
+# Apple Silicon (arm64) vs Intel (x86_64). uname -m reports "arm64" on M-series.
+ifeq ($(ARCH),arm64)
+DIRARCH := osx-arm64
+else
 DIRARCH := osx-amd64
+endif
 else
 $(error OS unrecognized ($OS))
 endif

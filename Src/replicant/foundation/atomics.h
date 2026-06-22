@@ -3,6 +3,8 @@
 #include "win-amd64/atomics.h"
 #elif defined(_WIN32) && defined(_M_IX86)
 #include "win-x86/atomics.h"
+#elif defined(__APPLE__) && (defined(__aarch64__) || defined(__arm64__))
+#include "osx-arm64/atomics.h"
 #elif defined(__APPLE__) && defined(__amd64__)
 #include "osx-amd64/atomics.h"
 #elif defined(__APPLE__) && defined(__i386__)

@@ -5,6 +5,8 @@
 #include "android-armv5/nxonce.h"
 #elif defined(_WIN32)
 #include "win/nxonce.h"
+#elif defined(__APPLE__) && (defined(__aarch64__) || defined(__arm64__))
+#include "osx-arm64/nxonce.h"
 #elif defined(__APPLE__) && defined(__amd64__)
 #include "osx-amd64/nxonce.h"
 #elif defined(__APPLE__) && defined(__i386__)
