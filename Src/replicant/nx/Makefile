@@ -20,7 +20,7 @@ else
 $(error OS unrecognized ($OS))
 endif
 
-CSOURCES := $(DIR)/nxstring.c $(DIR)/nxuri.c $(DIR)/nxdata.c $(DIR)/nxsemaphore.c $(DIRARCH)/nxonce.c $(DIR)/nxpath.c $(DIR)/nxcondition.c $(DIR)/nxthread.c $(DIR)/nxfile.c $(DIR)/nxsleep.c
+CSOURCES := $(DIR)/nxstring.c $(DIR)/nxmutablestring.c $(DIR)/nxuri.c $(DIR)/nxdata.c $(DIR)/nxsemaphore.c $(DIRARCH)/nxonce.c $(DIR)/nxpath.c $(DIR)/nxcondition.c $(DIR)/nxthread.c $(DIR)/nxfile.c $(DIR)/nxsleep.c
 CPPSOURCES := $(DIR)/NXFileObject.cpp $(DIR)/NXFileProgressiveDownloader.cpp
 
 LIBRARY_FILENAME := lib$(MODULE_NAME).so

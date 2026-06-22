@@ -5,6 +5,6 @@
 #include "linux/nxmutablestring.h"
 #elif defined(_WIN32)
 #include "win/nxmutablestring.h"
-#elif defined(__APPLE_)
+#elif defined(__APPLE__)
 #include "osx/nxmutablestring.h"
 #endif
