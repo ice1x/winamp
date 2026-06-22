@@ -93,9 +93,9 @@ skins/visualizations.
 - [ ] 00004 Set up a CI pipeline for building and testing on arm64 macOS
 
 ### Phase 1 — Platform layer (nx / bfc)
-- [ ] 00005 Add an osx-arm64 target to nx (Makefile/xcodeproj instead of osx-amd64)
+- [x] 00005 Add an osx-arm64 target to nx (Makefile/xcodeproj instead of osx-amd64) — `nx/Makefile` now detects `uname -m` and selects `osx-arm64`; the `foundation/atomics.h`, `foundation/types.h`, `nu/LockFreeLIFO.h` and `nx/nxonce.h` arch dispatchers route Apple Silicon to new `osx-arm64/` sources instead of `#error Port Me!`.
 - [ ] 00006 Rewrite the dead Carbon code in bfc/platform on Cocoa/POSIX
-- [ ] 00007 Implement nx primitives on macOS (threads, mutexes, semaphores, condition variables, files, time, sleep) via POSIX/GCD
+- [ ] 00007 Implement nx primitives on macOS (threads, mutexes, semaphores, condition variables, files, time, sleep) via POSIX/GCD — *partial:* arm64 atomics (`foundation/osx-arm64/atomics.h`), `NXOnce` (`nx/osx-arm64/nxonce.c`) and the lock-free LIFO (`nu/osx-arm64/LockFreeLIFO.h`) are implemented and unit-tested (`Src/replicant/tests/osx-arm64/run_tests.sh`); threads/files/time/sleep still pending.
 - [ ] 00008 Port the string layer (UTF-16 ↔ UTF-8, wchar_t, OSFNCHAR) for macOS
 
 ### Phase 2 — Replace third-party dependencies
@@ -147,3 +147,28 @@ skins/visualizations.
 - [ ] 00044 Run tests on M1/arm64 in CI
 - [ ] 00045 Profiling and optimization for Apple Silicon (NEON/Accelerate)
 - [ ] 00046 Update the build documentation for macOS
+
+## Building & testing the macOS (arm64) platform layer
+
+The arm64 platform primitives ported so far have a standalone unit-test suite
+that builds with the Xcode command-line tools (no Visual Studio required):
+
+```sh
+cd Src/replicant
+sh tests/osx-arm64/run_tests.sh
+```
+
+Each test is compiled with `-arch arm64`, which is what drives the macro
+dispatch in the `foundation`/`nu`/`nx` headers to select the `osx-arm64`
+sources. The suite covers:
+
+- `test_types` — fixed-width integer / colour / `GUID` typedefs and their sizes.
+- `test_atomics` — `nx_atomic_*` semantics and atomicity under thread contention.
+- `test_lifo` — the `lifo_*` stack (single-threaded ordering + concurrent
+  producer/consumer integrity).
+- `test_nxonce` — `NXOnce` runs its initializer exactly once across racing
+  threads, with acquire/release visibility (the naive flag check that the Win32
+  version uses is unsafe on weakly-ordered arm64).
+
+> The lock-free LIFO is currently a correct mutex-guarded fallback; a genuinely
+> lock-free arm64 implementation is tracked under task 00045.
