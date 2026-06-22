@@ -95,7 +95,7 @@ skins/visualizations.
 ### Phase 1 — Platform layer (nx / bfc)
 - [x] 00005 Add an osx-arm64 target to nx (Makefile/xcodeproj instead of osx-amd64) — `nx/Makefile` now detects `uname -m` and selects `osx-arm64`; the `foundation/atomics.h`, `foundation/types.h`, `nu/LockFreeLIFO.h` and `nx/nxonce.h` arch dispatchers route Apple Silicon to new `osx-arm64/` sources instead of `#error Port Me!`.
 - [ ] 00006 Rewrite the dead Carbon code in bfc/platform on Cocoa/POSIX
-- [ ] 00007 Implement nx primitives on macOS (threads, mutexes, semaphores, condition variables, files, time, sleep) via POSIX/GCD — *partial:* arm64 atomics (`foundation/osx-arm64/atomics.h`), `NXOnce` (`nx/osx-arm64/nxonce.c`) and the lock-free LIFO (`nu/osx-arm64/LockFreeLIFO.h`) are implemented and unit-tested (`Src/replicant/tests/osx-arm64/run_tests.sh`); threads/files/time/sleep still pending.
+- [ ] 00007 Implement nx primitives on macOS (threads, mutexes, semaphores, condition variables, files, time, sleep) via POSIX/GCD — *partial:* arm64 atomics (`foundation/osx-arm64/atomics.h`), `NXOnce` (`nx/osx-arm64/nxonce.c`) and the lock-free LIFO (`nu/osx-arm64/LockFreeLIFO.h`) are implemented and unit-tested. **Threads** (`nx/osx/nxthread.c`, pthread + return-value trampoline), **semaphores** (`nx/osx/nxsemaphore.c`, GCD `dispatch_semaphore` since macOS `sem_init` is a non-functional stub), **condition variables / mutexes** (`nx/osx/nxcondition.c`, `pthread_cond_t` + `pthread_mutex_t`) and **sleep/yield** (`nx/osx/nxsleep.c`, `nanosleep`/`sched_yield`) are now implemented and unit-tested (`Src/replicant/tests/osx-arm64/run_tests.sh`). The `nx_time_unix_64_t` typedef has an `osx/nxtime.h`; **files** (filereader/`nxfile`) remain pending — tracked under task 00023.
 - [ ] 00008 Port the string layer (UTF-16 ↔ UTF-8, wchar_t, OSFNCHAR) for macOS
 
 ### Phase 2 — Replace third-party dependencies
@@ -169,6 +169,15 @@ sources. The suite covers:
 - `test_nxonce` — `NXOnce` runs its initializer exactly once across racing
   threads, with acquire/release visibility (the naive flag check that the Win32
   version uses is unsafe on weakly-ordered arm64).
+- `test_sleep` — `NXSleep` blocks for at least the requested duration and
+  `NXSleepYield` returns without hanging.
+- `test_semaphore` — counting-semaphore semantics: concurrent producer/consumer
+  permit accounting and that `NXSemaphoreWait` genuinely blocks until a
+  `NXSemaphoreRelease`.
+- `test_condition` — `NXConditionSignal` wakes a thread blocked in
+  `NXConditionWait`, and `NXConditionTimedWait` times out instead of hanging.
+- `test_thread` — `NXThreadCreate` passes the parameter through and
+  `NXThreadJoin` returns the worker's value, single- and multi-threaded.
 
 > The lock-free LIFO is currently a correct mutex-guarded fallback; a genuinely
 > lock-free arm64 implementation is tracked under task 00045.

@@ -2,7 +2,9 @@
 # Build & run the osx-arm64 platform-port unit tests.
 #
 # These exercise the Apple Silicon (arm64) implementations of the replicant
-# foundation/nx primitives: types, atomics, the lock-free LIFO and NXOnce.
+# foundation/nx primitives: types, atomics, the lock-free LIFO, NXOnce, and the
+# threading/synchronization/sleep primitives (thread, semaphore, condition,
+# sleep).
 # Everything is compiled with `-arch arm64` so the macro dispatch in the
 # foundation/nx headers selects the osx-arm64 sources.
 #
@@ -40,6 +42,10 @@ run test_types   "$HERE/test_types.c"
 run test_atomics "$HERE/test_atomics.c"
 run test_lifo    "$HERE/test_lifo.c"
 run test_nxonce  "$HERE/test_nxonce.c" "$ROOT/nx/osx-arm64/nxonce.c"
+run test_sleep     "$HERE/test_sleep.c"     "$ROOT/nx/osx/nxsleep.c"
+run test_semaphore "$HERE/test_semaphore.c" "$ROOT/nx/osx/nxsemaphore.c"
+run test_condition "$HERE/test_condition.c" "$ROOT/nx/osx/nxcondition.c"
+run test_thread    "$HERE/test_thread.c"    "$ROOT/nx/osx/nxthread.c"
 
 if [ "$fail" -eq 0 ]; then
   echo "== ALL TESTS PASSED =="
