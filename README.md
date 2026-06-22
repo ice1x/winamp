@@ -84,6 +84,55 @@ skins/visualizations.
 - **00039** — first installable app: an `.app` bundle with a window you can drop into `/Applications`.
 - **00040–00041** — signed/notarized DMG suitable for distribution.
 
+## MVP scope — classic UI + local music (no network, no extra skins)
+
+A frequent question is *"when can a minimal Winamp run on the Mac — just the classic
+UI playing local files, with no internet features and no extra skins?"* This section
+defines that MVP precisely against the roadmap so progress can be measured against it.
+
+**In scope (the MVP critical path):**
+
+| Stage | Tasks | Status |
+|-------|-------|--------|
+| Platform layer | 00005, 00007, 00008, **00023** (filereader / POSIX file I/O) | ~90% — only 00023 left |
+| Build system | **00002**, **00003** (CMake to replace the `.sln`), 00006 (Carbon→Cocoa) | not started |
+| arm64 dependencies | **00009** (drop x86-only Intel IPP), 00011 (drop DirectX 9), **00012** (mp3 codec for arm64) | not started |
+| Audio engine | **00013** (build replicant core), **00014** (CoreAudio output), **00015** (MP3 decoder) | not started |
+| → 🎯 **00022 — first sound** | headless CLI plays a local `.mp3` end-to-end | **first real checkpoint** |
+| Library/UI glue | 00024 (tags for title/artist), 00026 (m3u/pls playlists) | not started |
+| Classic UI | 00029 (UI tech decision), 00030 (main window/transport), 00031 (playlist window), **00033** (`.wsz` classic-skin loader), **00034** (render classic skin) | not started |
+| → 🎯 **00039 — installable app** | `.app` bundle = **the MVP described above** | **MVP target** |
+
+**Explicitly out of MVP scope** (deferred so they don't gate the MVP):
+
+- Network: 00010 (OpenSSL), 00028 (HTTP / jnetlib / internet radio).
+- Extra codecs: 00016–00019 (AAC, FLAC, Vorbis, WAV) — MVP ships MP3-only.
+- Extra skins / theming beyond the single bundled classic skin.
+- DSP/visuals: 00020 (ReplayGain), 00021/00035 (EQ), 00036 (visualizations).
+- Library/metadata extras: 00025 (album art), 00027 (NDE database), 00032 (media library).
+- OS integration & distribution: 00037 (media keys), 00038 (drag & drop), 00040–00041
+  (signing/notarization/DMG) — needed to *ship*, not to *run locally*.
+
+**Honest reading of the timeline.** Two checkpoints matter:
+
+1. **First sound (00022)** — a headless player that actually decodes and plays a local
+   MP3. This is the nearest meaningful "it works on the Mac" moment, and the right thing
+   to aim for first.
+2. **The MVP you described (≈00039 + 00033/00034)** — the classic skinned UI driving local
+   playback.
+
+Today (Phase 1 platform layer ~90% done) the work completed so far is the *smallest and most
+self-contained* part of the port: thread/sync/string/atomic primitives with standalone unit
+tests. The MVP critical path is still **~13–14 substantial tasks**, and the dominant risk/effort
+sits in three of them: **00003** (standing up a whole-app CMake build for a ~1.7 GB Windows
+codebase), **00009** (excising the x86-only Intel IPP DSP dependency on arm64), and
+**00013 + 00033/00034** (getting the replicant core/codecs to actually compile, plus a
+from-scratch classic-skin renderer). Those are each days-to-weeks of work, not afternoons like
+the primitives done so far — so realistically *first sound* comes well before a *skinned MVP*,
+and neither is "next week." The order to drive toward it: finish **00023**, then **00003**,
+then the 00009→00012→00013→00014→00015 chain to hit **00022**, then the Phase 5 UI subset to
+hit **00039**.
+
 ## Tasks
 
 ### Phase 0 — Infrastructure and assessment
