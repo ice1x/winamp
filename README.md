@@ -90,7 +90,20 @@ A frequent question is *"when can a minimal Winamp run on the Mac — just the c
 UI playing local files, with no internet features and no extra skins?"* This section
 defines that MVP precisely against the roadmap so progress can be measured against it.
 
-**In scope (the MVP critical path):**
+> ### ⭐ TOP PRIORITY #1 — and the only priority until the gate is met
+>
+> **The MVP critical path below is priority #1.** Nothing else on the roadmap is worked
+> on until the **gate** is reached:
+>
+> > 🚪 **GATE:** a **DMG installs locally** and the installed app **plays local audio files**.
+>
+> Until that single gate is green, every task outside the critical path is **frozen** —
+> no network, no extra codecs, no extra skins, no DSP/visualizations, no media library,
+> no OS-integration polish. Those are picked up **only after** the local DMG installs and
+> plays audio. Anyone touching this repo should pull the next *unblocked* critical-path
+> task and ignore everything else.
+
+**In scope (the MVP critical path — priority #1):**
 
 | Stage | Tasks | Status |
 |-------|-------|--------|
@@ -101,25 +114,29 @@ defines that MVP precisely against the roadmap so progress can be measured again
 | → 🎯 **00022 — first sound** | headless CLI plays a local `.mp3` end-to-end | **first real checkpoint** |
 | Library/UI glue | 00024 (tags for title/artist), 00026 (m3u/pls playlists) | not started |
 | Classic UI | 00029 (UI tech decision), 00030 (main window/transport), 00031 (playlist window), **00033** (`.wsz` classic-skin loader), **00034** (render classic skin) | not started |
-| → 🎯 **00039 — installable app** | `.app` bundle = **the MVP described above** | **MVP target** |
+| → 🎯 **00039 — installable app** | `.app` bundle with the classic UI playing local files | not started |
+| Packaging (part of the gate) | **00041** (build a DMG) + ad-hoc/local codesign so the `.app` launches on this machine | not started |
+| → 🚪 **GATE — local DMG plays audio** | install the DMG locally, open the app, play a local file | **definition of "MVP done"** |
 
-**Explicitly out of MVP scope** (deferred so they don't gate the MVP):
+**Explicitly out of MVP scope — FROZEN until the gate above is green:**
 
 - Network: 00010 (OpenSSL), 00028 (HTTP / jnetlib / internet radio).
 - Extra codecs: 00016–00019 (AAC, FLAC, Vorbis, WAV) — MVP ships MP3-only.
 - Extra skins / theming beyond the single bundled classic skin.
 - DSP/visuals: 00020 (ReplayGain), 00021/00035 (EQ), 00036 (visualizations).
 - Library/metadata extras: 00025 (album art), 00027 (NDE database), 00032 (media library).
-- OS integration & distribution: 00037 (media keys), 00038 (drag & drop), 00040–00041
-  (signing/notarization/DMG) — needed to *ship*, not to *run locally*.
+- OS integration: 00037 (media keys), 00038 (drag & drop).
+- Wider distribution: **00040** (Apple notarization for *other* machines) — the *local*
+  DMG of the gate only needs ad-hoc/local signing; full notarization is post-MVP.
+- Everything in Phase 7 (00042–00046) beyond what the critical-path tasks already test.
 
 **Honest reading of the timeline.** Two checkpoints matter:
 
 1. **First sound (00022)** — a headless player that actually decodes and plays a local
    MP3. This is the nearest meaningful "it works on the Mac" moment, and the right thing
    to aim for first.
-2. **The MVP you described (≈00039 + 00033/00034)** — the classic skinned UI driving local
-   playback.
+2. **The gate (00039 + 00033/00034 + 00041)** — a locally-installable DMG whose classic
+   skinned UI plays local files. This is the line that flips the frozen tasks back on.
 
 Today (Phase 1 platform layer ~90% done) the work completed so far is the *smallest and most
 self-contained* part of the port: thread/sync/string/atomic primitives with standalone unit
@@ -128,10 +145,11 @@ sits in three of them: **00003** (standing up a whole-app CMake build for a ~1.7
 codebase), **00009** (excising the x86-only Intel IPP DSP dependency on arm64), and
 **00013 + 00033/00034** (getting the replicant core/codecs to actually compile, plus a
 from-scratch classic-skin renderer). Those are each days-to-weeks of work, not afternoons like
-the primitives done so far — so realistically *first sound* comes well before a *skinned MVP*,
-and neither is "next week." The order to drive toward it: finish **00023**, then **00003**,
-then the 00009→00012→00013→00014→00015 chain to hit **00022**, then the Phase 5 UI subset to
-hit **00039**.
+the primitives done so far — so realistically *first sound* comes well before the *gate*,
+and neither is "next week." The strict drive order (do nothing off this path): finish
+**00023** → **00003** → the 00009→00012→00013→00014→00015 chain to hit **00022** → the Phase 5
+UI subset (00029–00031, 00033, 00034) for **00039** → **00041** to package the local DMG and
+clear the **gate**. Only once the gate is green do the frozen tasks above come back into play.
 
 ## Tasks
 
